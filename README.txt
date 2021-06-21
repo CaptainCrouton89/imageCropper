@@ -1,4 +1,4 @@
-****** For imageTransformerManual.py (deprecated) *********
+****** For manualImageTransformer.py (deprecated) *********
 
 This is a lightweight script using the opencv library for selecting a region of an image, warping it to a rectangular shape, and then applying that same warp to every other image in that image's directory.
 
