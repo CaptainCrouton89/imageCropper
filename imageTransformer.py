@@ -9,7 +9,7 @@ import os
 ap = argparse.ArgumentParser()
 ap.add_argument("inputpath", help = "input path to the directory with the image files with form <folder/etc>")
 ap.add_argument("outputpath", help = "output path to the directory with the image files with form <folder/etc>")
-ap.add_argument("-d", "--dilation", type=int, choices=range(0, 310, 10), default=70, help="dilation value: how much to incease the wiggle room around the corners of the solar panel")
+ap.add_argument("-d", "--dilation", type=int, choices=range(0, 310), default=70, help="dilation value: how much to incease the wiggle room around the corners of the solar panel")
 
 args = vars(ap.parse_args())
 in_path = Path(args["inputpath"])
