@@ -41,7 +41,7 @@ def BR(l):
             pts = (x, y)
     return pts
 
-def find_corners(img):
+def find_corners(img, dilation=60):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray = 255-gray
 
@@ -49,6 +49,7 @@ def find_corners(img):
     # do adaptive threshold on gray image
     ret,thresh = cv2.threshold(blur, 220, 255, cv2.THRESH_BINARY_INV)
     # apply morphology
+
     kernel = np.ones((40,40), np.uint8)
     morph = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
     morph = cv2.morphologyEx(morph, cv2.MORPH_CLOSE, kernel)
@@ -57,9 +58,11 @@ def find_corners(img):
     vert = cv2.morphologyEx(morph, cv2.MORPH_OPEN, kernel)
     kernel = np.ones((5,11), np.uint8)
     horiz = cv2.morphologyEx(morph, cv2.MORPH_OPEN, kernel)
-
     # combine
     rect = cv2.add(horiz,vert)
+
+    kernel = np.ones((dilation, dilation), np.uint8)
+    rect = cv2.dilate(rect, kernel)
 
     contours, hierarchy = cv2.findContours(rect.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
     for i, line in enumerate(contours):
