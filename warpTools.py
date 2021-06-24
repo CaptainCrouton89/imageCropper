@@ -1,6 +1,5 @@
 import numpy as np
 import cv2
-from matplotlib import pyplot as plt
 import math
 
 # Global variables used to determine clockwise order of points
