@@ -134,4 +134,7 @@ def find_corners(img):
     # show(gray, "centers")
 
     centers = [[int(c[0]), int(c[1])] for c in centers]
+    if np.std([c[0] for c in centers]) < 500 or np.std([c[1] for c in centers]) < 500:
+        return False        
+
     return centers

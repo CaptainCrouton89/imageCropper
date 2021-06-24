@@ -27,16 +27,16 @@ def rotate(img):
     # show(processedimg)
 
     slopes = get_slopes(lines)
-    radian_slopes = [math.atan(slope) for slope in slopes]
-
+    radian_slopes = [abs(math.atan(slope)) for slope in slopes]
     avg_slope = np.median(radian_slopes)
+    # print("Average slope in radians:", avg_slope)
 
-    if avg_slope > 45 or avg_slope < -45:
+    if avg_slope > np.pi/4:
         img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
     return img
 
 if __name__ == '__main__':
-    path = "../data/warp_images/input/0050_2021-06-10-02-46-50.jpg"
+    path = "../data/warp_images/input/0194_S93200802414802.jpg"
     img = cv2.imread(path)
     img = rotate(img)
     show(img)
