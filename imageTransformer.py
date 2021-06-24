@@ -1,6 +1,7 @@
 from pathlib import Path
 from warpTools import four_point_transform
 from cornerDetectionTools import find_corners
+from rotationTools import rotate
 import numpy as np
 import argparse
 import cv2
@@ -29,7 +30,5 @@ for filename in os.listdir(in_path):
         image = cv2.imread(filepath)
         corners = find_corners(image)
         image = four_point_transform(image, corners)
-        height, width, channels = image.shape
-        if height > width:
-            image = cv2.rotate(image, cv2.cv2.ROTATE_90_CLOCKWISE)
+        image = rotate(image)
         cv2.imwrite(file_outpath, image)

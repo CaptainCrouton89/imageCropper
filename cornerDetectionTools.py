@@ -2,22 +2,7 @@ import cv2
 import numpy as np
 import jenkspy as jp
 import math
-
-def show(img, name="img"):
-    """Displays image until keypress"""
-    cv2.imshow(name, img)
-    cv2.waitKey(0)
-    cv2.destroyWindow(name)
-
-def get_slope(x1, y1, x2, y2):
-    return (y2-y1)/(x2-x1)
-
-def get_slopes(lines):
-    slopes = []
-    for line in lines:
-        for x1, y1, x2, y2 in line:
-            slopes.append(get_slope(x1, y1, x2, y2))
-    return slopes
+from cvTools import *
 
 def cluster_points(points, nclusters):
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
@@ -31,9 +16,7 @@ def find_intersection(x1,y1,x2,y2,x3,y3,x4,y4):
 
 def segment_lines(lines):
     slopes = get_slopes(lines)
-    radian_slopes = []
-    for slope in slopes:
-        radian_slopes.append(math.atan(slope))
+    radian_slopes = [math.atan(slope) for slope in slopes]
     # Perform a jenks natural breaks segmentation of data
     # This separates our slopes into the four sides of the quadrilateral
     min_s1, max_s1, max_s2, max_s3, max_s4 = jp.jenks_breaks(radian_slopes, nb_class=4)
@@ -67,6 +50,17 @@ def get_intersections_of_linesets(lines1, lines2):
                     Py.append(i_pt[1])
         return Px, Py
 
+def _pre_process(img):
+    """Filters image for easy outlining"""
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    gray = 255-gray
+    blur = cv2.blur(gray, (10, 10))
+    ret,thresh = cv2.threshold(blur, 240, 255, cv2.THRESH_BINARY_INV)
+    kernel = np.ones((50,50), np.uint8) # Modify this for adjusting how much it can cover up holes
+    morph = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+    rect = cv2.morphologyEx(morph, cv2.MORPH_CLOSE, kernel)
+    return rect
+
 def find_corners(img):
     """ Finds corners of solar panel image
     
@@ -84,20 +78,12 @@ def find_corners(img):
         A list containing the four corners of the image in the format [[x, y], [x, y], etc]
     """
     height, width, channels = img.shape
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    gray = 255-gray
-
-    blur = cv2.blur(gray, (10, 10))
-    ret,thresh = cv2.threshold(blur, 240, 255, cv2.THRESH_BINARY_INV)
-
-    kernel = np.ones((50,50), np.uint8) # Modify this for adjusting how much it can cover up holes
-    morph = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
-    rect = cv2.morphologyEx(morph, cv2.MORPH_CLOSE, kernel)
-
-    edges = cv2.Canny(rect,50,150,apertureSize = 3)
+    
+    img = _pre_process(img)
+    edges = cv2.Canny(img,50,150,apertureSize = 3)
     edges = cv2.dilate(edges, np.ones((10, 10), dtype=np.uint8))
     lines = cv2.HoughLinesP(edges,2,np.pi/360,100, 1, minLineLength=1000,maxLineGap=200)
-
+    
     all_lines = segment_lines(lines)
 
     # Uncomment  code for debugging
