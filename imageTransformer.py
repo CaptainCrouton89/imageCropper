@@ -1,4 +1,3 @@
-# import the necessary packages
 from pathlib import Path
 from warpTools import four_point_transform
 from cornerDetectionTools import find_corners
@@ -21,13 +20,12 @@ try:
 except:
 	pass
 
-# Transform remainining files
 for filename in os.listdir(in_path):
     if filename.endswith(".jpg") or filename.endswith(".png"):
         filepath = str(in_path / filename)
         file_outpath = str(out_path / filename)
         print("warping:", filepath)
         image = cv2.imread(filepath)
-        tl, tr, bl, br = find_corners(image, dl) # Change dilation value to adjust perimeter. 60 is default.
-        warped = four_point_transform(image, [tl, tr, bl, br])
+        corners = find_corners(image, dl) # Change dilation value to adjust perimeter. 60 is default.
+        warped = four_point_transform(image, corners)#[tl, tr, bl, br])
         cv2.imwrite(file_outpath, warped)
