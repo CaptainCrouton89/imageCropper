@@ -146,21 +146,22 @@ def find_corners(img, dilation=60):
 
     edges = cv2.Canny(rect,50,150,apertureSize = 3)
     edges = cv2.dilate(edges, np.ones((10, 10), dtype=np.uint8))
-    lines = cv2.HoughLinesP(edges,2,np.pi/360,100, 1, minLineLength=300,maxLineGap=600)
+    lines = cv2.HoughLinesP(edges,2,np.pi/360,100, 1, minLineLength=1000,maxLineGap=200)
+    # lines = cv2.HoughLinesP(edges,2,np.pi/360,100, 1, minLineLength=500,maxLineGap=300) # REALLY SOLID PERFORMANCE
 
     h_lines, v_lines = segment_lines(lines)
 
-
     # Uncomment  code for debugging
-    # houghimg = gray.copy()
-    # for line in h_lines:
-    #     for x1, y1, x2, y2 in line:
-    #         color = np.random.randint(0,255,3).tolist()
-    #         cv2.line(houghimg, (x1, y1), (x2, y2), color=(100, 100, 100), thickness=20)
-    # for line in v_lines:
-    #     for x1, y1, x2, y2 in line:
-    #         color = np.random.randint(0,255,3).tolist()
-    #         cv2.line(houghimg, (x1, y1), (x2, y2), color=(200, 200, 200), thickness=20)
+    houghimg = gray.copy()
+    for line in h_lines:
+        for x1, y1, x2, y2 in line:
+            color = np.random.randint(0,255,3).tolist()
+            cv2.line(houghimg, (x1, y1), (x2, y2), color=(100, 100, 100), thickness=20)
+    for line in v_lines:
+        for x1, y1, x2, y2 in line:
+            color = np.random.randint(0,255,3).tolist()
+            cv2.line(houghimg, (x1, y1), (x2, y2), color=(200, 200, 200), thickness=20)
+    show(houghimg, "lines")
 
     # find the line intersection points
     Px = []
@@ -177,22 +178,23 @@ def find_corners(img, dilation=60):
 
     
     # Uncomment code for debugging
-    # intersectsimg = houghimg.copy()
-    # for cx, cy in zip(Px, Py):
-    #     cx = np.round(cx).astype(int)
-    #     cy = np.round(cy).astype(int)
-    #     color = np.random.randint(0,255,3).tolist() # random colors
-    #     cv2.circle(intersectsimg, (cx, cy), radius=10, color=color, thickness=-1) # -1: filled circle
+    intersectsimg = houghimg.copy()
+    for cx, cy in zip(Px, Py):
+        cx = np.round(cx).astype(int)
+        cy = np.round(cy).astype(int)
+        color = np.random.randint(0,255,3).tolist() # random colors
+        cv2.circle(intersectsimg, (cx, cy), radius=10, color=color, thickness=-1) # -1: filled circle
 
     P = np.float32(np.column_stack((Px, Py)))
     nclusters = 4
     centers = cluster_points(P, nclusters)
+    show(intersectsimg, "centers")
 
     # Uncomment code for debugging
-    # for cx, cy in centers:
-    #     cx = np.round(cx).astype(int)
-    #     cy = np.round(cy).astype(int)
-    #     cv2.circle(gray, (cx, cy), radius=10, color=[150, 150, 150], thickness=-1) # -1: filled circle
-    # show(gray, "centers")
+    for cx, cy in centers:
+        cx = np.round(cx).astype(int)
+        cy = np.round(cy).astype(int)
+        cv2.circle(gray, (cx, cy), radius=10, color=[150, 150, 150], thickness=-1) # -1: filled circle
+    show(gray, "centers")
     centers = [[int(c[0]), int(c[1])] for c in centers]
     return centers
