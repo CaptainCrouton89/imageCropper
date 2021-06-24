@@ -30,54 +30,27 @@ def get_slopes(lines):
     return slopes
 
 def segment_lines(lines):
-    all_positive = True
     slopes = get_slopes(lines)
     radian_slopes = []
     for slope in slopes:
         radian_slopes.append(math.atan(slope))
-    min_s1, max_s1, max_s2, max_s3 = jp.jenks_breaks(radian_slopes, nb_class=3)
+    min_s1, max_s1, max_s2, max_s3, max_s4 = jp.jenks_breaks(radian_slopes, nb_class=4)
     lines1 = []
     lines2 = []
     lines3 = []
-    h_slopes = []
-    v_slopes = []
+    lines4 = []
     for line in lines:
         for x1, y1, x2, y2 in line:
             rad_slope = math.atan(get_slope(x1, y1, x2, y2))
             if rad_slope <= max_s1:
                 lines1.append(line)
-                v_slopes.append(rad_slope)
             elif rad_slope <= max_s2:
                 lines2.append(line)
-                h_slopes.append(rad_slope)
-            else:
+            elif rad_slope <= max_s3:
                 lines3.append(line)
-    
-    counts = [[len(lines1), lines1], [len(lines2), lines2], [len(lines3), lines3]]
-    print([c[0] for c in counts])
-    try:
-        m = counts.index(max(counts))
-        v_lines = counts[m-1][1] + counts[m-2][1]
-        h_lines = counts[m][1]
-    except:
-        lines1 = []
-        lines2 =[]
-        min_s1, max_s1, max_s2 = jp.jenks_breaks(radian_slopes, nb_class=2)
-        for line in lines:
-            for x1, y1, x2, y2 in line:
-                rad_slope = math.atan(get_slope(x1, y1, x2, y2))
-                if rad_slope <= max_s1:
-                    lines1.append(line)
-                    v_slopes.append(rad_slope)
-                elif rad_slope <= max_s2:
-                    lines2.append(line)
-                    h_slopes.append(rad_slope)
-                else:
-                    lines3.append(line)
-        h_lines = lines1
-        v_lines = lines2
-    return h_lines, v_lines
-
+            elif rad_slope <= max_s4:
+                lines4.append(line)
+    return [lines1, lines2, lines3, lines4]
 
 def i_line(p1, p2):
     A = (p1[1] - p2[1])
@@ -96,44 +69,21 @@ def intersection(L1, L2):
     else:
         return False
 
-
-def TL(l):
-    max = np.inf
-    pts = (0, 0)
-    for x, y in l:
-        if x+y < max:
-            max = x+y
-            pts = (x, y)
-    return pts
-
-def TR(l):
-    max = -np.inf
-    pts = (0, 0)
-    for x, y in l:
-        if x-y > max:
-            max = x-y
-            pts = (x, y)
-    return pts
-
-def BL(l):
-    max = -np.inf
-    pts = (0, 0)
-    for x, y in l:
-        if y-x > max:
-            max = y-x
-            pts = (x, y)
-    return pts
-
-def BR(l):
-    max = -np.inf
-    pts = (0, 0)
-    for x, y in l:
-        if x+y > max:
-            max = x+y
-            pts = (x, y)
-    return pts
+def get_intersections_of_linesets(lines1, lines2):
+        Px = []
+        Py = []
+        for line1 in lines1:
+            for line2 in lines2:                    
+                x1, y1, x2, y2 = line1[0]
+                x3, y3, x4, y4 = line2[0]
+                i_pt = find_intersection(float(x1), float(y1), float(x2), float(y2), float(x3), float(y3), float(x4), float(y4))
+                if i_pt:
+                    Px.append(i_pt[0])
+                    Py.append(i_pt[1])
+        return Px, Py
 
 def find_corners(img, dilation=60):
+    height, width, channels = img.shape
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray = 255-gray
 
@@ -149,52 +99,54 @@ def find_corners(img, dilation=60):
     lines = cv2.HoughLinesP(edges,2,np.pi/360,100, 1, minLineLength=1000,maxLineGap=200)
     # lines = cv2.HoughLinesP(edges,2,np.pi/360,100, 1, minLineLength=500,maxLineGap=300) # REALLY SOLID PERFORMANCE
 
-    h_lines, v_lines = segment_lines(lines)
+    all_lines = segment_lines(lines)
 
     # Uncomment  code for debugging
-    houghimg = gray.copy()
-    for line in h_lines:
-        for x1, y1, x2, y2 in line:
-            color = np.random.randint(0,255,3).tolist()
-            cv2.line(houghimg, (x1, y1), (x2, y2), color=(100, 100, 100), thickness=20)
-    for line in v_lines:
-        for x1, y1, x2, y2 in line:
-            color = np.random.randint(0,255,3).tolist()
-            cv2.line(houghimg, (x1, y1), (x2, y2), color=(200, 200, 200), thickness=20)
-    show(houghimg, "lines")
+    # houghimg = gray.copy()
+    # for i, line_set in enumerate(all_lines):
+    #     for line in line_set:
+    #         for x1, y1, x2, y2 in line:
+    #             cv2.line(houghimg, (x1, y1), (x2, y2), color=(50*i, 50*i, 50*i), thickness=20)
+    # show(houghimg, "lines")
 
     # find the line intersection points
+    point_list = []
+    point_list.append(get_intersections_of_linesets(all_lines[0], all_lines[1]))
+    point_list.append(get_intersections_of_linesets(all_lines[0], all_lines[2]))
+    point_list.append(get_intersections_of_linesets(all_lines[0], all_lines[3]))
+    point_list.append(get_intersections_of_linesets(all_lines[1], all_lines[2]))
+    point_list.append(get_intersections_of_linesets(all_lines[1], all_lines[3]))
+    point_list.append(get_intersections_of_linesets(all_lines[2], all_lines[3]))
+
     Px = []
     Py = []
-    pts = []
-    for h_line in h_lines:
-        for v_line in v_lines:
-            x1, y1, x2, y2 = h_line[0]
-            x3, y3, x4, y4 = v_line[0]
-            i_pt = find_intersection(float(x1), float(y1), float(x2), float(y2), float(x3), float(y3), float(x4), float(y4))
-            if i_pt:
-                Px.append(i_pt[0])
-                Py.append(i_pt[1])
+    for x_list, y_list in point_list:
+        for x, y in zip(x_list, y_list):
+            if x < 0 or x > width or y < 0 or y > height:
+                continue
+            else:
+                Px.append(x)
+                Py.append(y)
 
-    
     # Uncomment code for debugging
-    intersectsimg = houghimg.copy()
-    for cx, cy in zip(Px, Py):
-        cx = np.round(cx).astype(int)
-        cy = np.round(cy).astype(int)
-        color = np.random.randint(0,255,3).tolist() # random colors
-        cv2.circle(intersectsimg, (cx, cy), radius=10, color=color, thickness=-1) # -1: filled circle
+    # intersectsimg = houghimg.copy()
+    # for cx, cy in zip(Px, Py):
+    #     cx = np.round(cx).astype(int)
+    #     cy = np.round(cy).astype(int)
+    #     color = np.random.randint(0,255,3).tolist()
+    #     cv2.circle(intersectsimg, (cx, cy), radius=10, color=color, thickness=-1)
+    # show(intersectsimg, "centers")
 
     P = np.float32(np.column_stack((Px, Py)))
     nclusters = 4
     centers = cluster_points(P, nclusters)
-    show(intersectsimg, "centers")
 
     # Uncomment code for debugging
-    for cx, cy in centers:
-        cx = np.round(cx).astype(int)
-        cy = np.round(cy).astype(int)
-        cv2.circle(gray, (cx, cy), radius=10, color=[150, 150, 150], thickness=-1) # -1: filled circle
-    show(gray, "centers")
+    # for cx, cy in centers:
+    #     cx = np.round(cx).astype(int)
+    #     cy = np.round(cy).astype(int)
+    #     cv2.circle(gray, (cx, cy), radius=10, color=[150, 150, 150], thickness=-1) # -1: filled circle
+    # show(gray, "centers")
+
     centers = [[int(c[0]), int(c[1])] for c in centers]
     return centers
