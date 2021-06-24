@@ -11,6 +11,13 @@ def show(img, name="img"):
 def get_slope(x1, y1, x2, y2):
     return (y2-y1)/(x2-x1)
 
+def get_slopes(lines):
+    slopes = []
+    for line in lines:
+        for x1, y1, x2, y2 in line:
+            slopes.append(get_slope(x1, y1, x2, y2))
+    return slopes
+
 def cluster_points(points, nclusters):
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
     _, _, centers = cv2.kmeans(points, nclusters, None, criteria, 10, cv2.KMEANS_PP_CENTERS)
@@ -21,13 +28,6 @@ def find_intersection(x1,y1,x2,y2,x3,y3,x4,y4):
         px= ( (x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4) ) / ( (x1-x2)*(y3-y4)-(y1-y2)*(x3-x4) ) 
         py= ( (x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4) ) / ( (x1-x2)*(y3-y4)-(y1-y2)*(x3-x4) )
         return px, py
-
-def get_slopes(lines):
-    slopes = []
-    for line in lines:
-        for x1, y1, x2, y2 in line:
-            slopes.append(get_slope(x1, y1, x2, y2))
-    return slopes
 
 def segment_lines(lines):
     slopes = get_slopes(lines)
@@ -51,23 +51,6 @@ def segment_lines(lines):
             elif rad_slope <= max_s4:
                 lines4.append(line)
     return [lines1, lines2, lines3, lines4]
-
-def i_line(p1, p2):
-    A = (p1[1] - p2[1])
-    B = (p2[0] - p1[0])
-    C = (p1[0]*p2[1] - p2[0]*p1[1])
-    return [A, B, -C]
-
-def intersection(L1, L2):
-    D  = L1[0] * L2[1] - L1[1] * L2[0]
-    Dx = L1[2] * L2[1] - L1[1] * L2[2]
-    Dy = L1[0] * L2[2] - L1[2] * L2[0]
-    if D != 0:
-        x = Dx / D
-        y = Dy / D
-        return x, y
-    else:
-        return False
 
 def get_intersections_of_linesets(lines1, lines2):
         Px = []
@@ -97,7 +80,6 @@ def find_corners(img, dilation=60):
     edges = cv2.Canny(rect,50,150,apertureSize = 3)
     edges = cv2.dilate(edges, np.ones((10, 10), dtype=np.uint8))
     lines = cv2.HoughLinesP(edges,2,np.pi/360,100, 1, minLineLength=1000,maxLineGap=200)
-    # lines = cv2.HoughLinesP(edges,2,np.pi/360,100, 1, minLineLength=500,maxLineGap=300) # REALLY SOLID PERFORMANCE
 
     all_lines = segment_lines(lines)
 

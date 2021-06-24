@@ -3,6 +3,7 @@ import cv2
 from matplotlib import pyplot as plt
 import math
 
+# Global variables used to determine clockwise order of points
 centroid = [2, 3]
 refvec = [0, 1]
 
