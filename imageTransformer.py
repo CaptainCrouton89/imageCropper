@@ -10,14 +10,12 @@ import os
 ap = argparse.ArgumentParser()
 ap.add_argument("inputpath", help = "input path to the directory with the image files with form <folder/etc>")
 ap.add_argument("outputpath", help = "output path to the directory with the image files with form <folder/etc>")
-ap.add_argument("-t", "--target_dimensions", type=list, help="Change the aspet ratio of image to conform to this")
-ap.add_argument("-d", "--dilation", type=int, choices=range(0, 310), default=70, help="dilation value: how much to incease the wiggle room around the corners of the solar panel")
+ap.add_argument("-t", "--target_dimensions", type=tuple, help="Change the aspet ratio of image to conform to this")
 
 
 args = vars(ap.parse_args())
 in_path = Path(args["inputpath"])
 out_path = Path(args["outputpath"])
-dl = args["dilation"]
 target_dim = args["target_dimensions"]
 
 if not target_dim:
