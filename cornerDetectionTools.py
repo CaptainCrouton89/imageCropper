@@ -24,7 +24,6 @@ def cluster_points(points, nclusters):
     return centers
 
 def find_intersection(x1,y1,x2,y2,x3,y3,x4,y4):
-
         px= ( (x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4) ) / ( (x1-x2)*(y3-y4)-(y1-y2)*(x3-x4) ) 
         py= ( (x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4) ) / ( (x1-x2)*(y3-y4)-(y1-y2)*(x3-x4) )
         return px, py
@@ -34,6 +33,8 @@ def segment_lines(lines):
     radian_slopes = []
     for slope in slopes:
         radian_slopes.append(math.atan(slope))
+    # Perform a jenks natural breaks segmentation of data
+    # This separates our slopes into the four sides of the quadrilateral
     min_s1, max_s1, max_s2, max_s3, max_s4 = jp.jenks_breaks(radian_slopes, nb_class=4)
     lines1 = []
     lines2 = []
@@ -65,7 +66,7 @@ def get_intersections_of_linesets(lines1, lines2):
                     Py.append(i_pt[1])
         return Px, Py
 
-def find_corners(img, dilation=60):
+def find_corners(img):
     height, width, channels = img.shape
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray = 255-gray
