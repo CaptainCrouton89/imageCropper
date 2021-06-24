@@ -4,9 +4,10 @@ import jenkspy as jp
 import math
 
 def show(img, name="img"):
+    """Displays image until keypress"""
     cv2.imshow(name, img)
     cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    cv2.destroyWindow(name)
 
 def get_slope(x1, y1, x2, y2):
     return (y2-y1)/(x2-x1)
@@ -67,6 +68,21 @@ def get_intersections_of_linesets(lines1, lines2):
         return Px, Py
 
 def find_corners(img):
+    """ Finds corners of solar panel image
+    
+    Done by filtering image, finding edges, using houghtransforms to find 
+    line approximations, segmenting all lines into four groups (representing each edge of the 
+    solar panel), finding the intersections between each group of lines, and then using a clustering
+    algorithm to find the "average" point in each cluster, representing the best approximation of 
+    each corner.
+
+    Args:
+        img: 
+            Image of solar panel
+
+    Returns
+        A list containing the four corners of the image in the format [[x, y], [x, y], etc]
+    """
     height, width, channels = img.shape
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray = 255-gray
