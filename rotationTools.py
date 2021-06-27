@@ -7,15 +7,23 @@ def _pre_process(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img = 255-img
     img = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,\
-            cv2.THRESH_BINARY,41,1) # cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,21,4
-    
-    kernel = np.ones((8, 8), np.uint8) # Modify this for adjusting how much it can cover up holes
-    img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel, iterations=1)
-    show(img)
-    
-    kernel = np.ones((10, 10), np.uint8) # Modify this for adjusting how much it can cover up holes
+            cv2.THRESH_BINARY,31,1) # cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,21,4
+    show(img, "thresh")
+
+    kernel = np.ones((4, 4), np.uint8) # Modify this for adjusting how much it can cover up holes
     img = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel, iterations=1)
-    show(img)
+    show(img, "open")
+
+
+    # kernel = np.ones((2, 2), np.uint8) # Modify this for adjusting how much it can cover up holes
+    # img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel, iterations=1)
+    # show(img, "close")
+
+    # kernel = np.ones((3,3),np.float32)
+    # img = cv2.filter2D(img,-1,kernel)
+    # show(img)
+    
+    
     #img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel, iterations=1)
     # show(img)
     # img = cv2.Canny(img,50,255,apertureSize = 5)
@@ -59,6 +67,7 @@ def rotate(img):
 
     if avg_slope > np.pi/4:
         img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
+        print('rotated')
     return img
 
 if __name__ == '__main__':
