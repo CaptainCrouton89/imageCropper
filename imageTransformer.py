@@ -28,6 +28,7 @@ except:
 
 faulty_images = []
 
+
 for filename in os.listdir(in_path):
     if filename.endswith(".jpg") or filename.endswith(".png"):
         filepath = str(in_path / filename)
@@ -38,12 +39,22 @@ for filename in os.listdir(in_path):
         corners = find_corners(image)
         if not corners:
             faulty_images.append(filepath)
+            print()
             continue
         image = four_point_transform(image, corners)
+        if image.size == 0:
+            faulty_images.append(filepath)
+            print()
+            continue
         image = rotate(image)
+        if image.size == 0:
+            faulty_images.append(filepath)
+            print()
+            continue
         image = cv2.resize(image, target_dim)
         cv2.imwrite(file_outpath, image)
 
-print("\nThe following images could not be processed:")
-for filepath in faulty_images:
-    print("\t", filepath)
+if faulty_images:
+    print("\nThe following images could not be processed:")
+    for filepath in faulty_images:
+        print("\t", filepath)

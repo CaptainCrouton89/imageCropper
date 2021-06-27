@@ -4,12 +4,16 @@ import jenkspy as jp
 import math
 from cvTools import *
 
+colors = {"RED": (255, 0, 0), "GREEN": (0, 255, 0), "BLUE": (0, 0, 255), "YELLOW": (255, 255, 0), "CYAN": (0, 255, 255), "MAGENTA": (255, 0, 255)}
+
 def cluster_points(points, nclusters):
     criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 10, 1.0)
-    _, _, centers = cv2.kmeans(points, nclusters, None, criteria, 10, cv2.KMEANS_PP_CENTERS)
-    return centers
+    compactness, _, centers = cv2.kmeans(points, nclusters, None, criteria, 10, cv2.KMEANS_PP_CENTERS)
+    return compactness, centers
 
 def find_intersection(x1,y1,x2,y2,x3,y3,x4,y4):
+        if ( (x1-x2)*(y3-y4)-(y1-y2)*(x3-x4) ) == 0:
+            return False
         px= ( (x1*y2-y1*x2)*(x3-x4)-(x1-x2)*(x3*y4-y3*x4) ) / ( (x1-x2)*(y3-y4)-(y1-y2)*(x3-x4) ) 
         py= ( (x1*y2-y1*x2)*(y3-y4)-(y1-y2)*(x3*y4-y3*x4) ) / ( (x1-x2)*(y3-y4)-(y1-y2)*(x3-x4) )
         return px, py
@@ -20,22 +24,47 @@ def segment_lines(lines):
     # Perform a jenks natural breaks segmentation of data
     # This separates our slopes into the four sides of the quadrilateral
     min_s1, max_s1, max_s2, max_s3, max_s4 = jp.jenks_breaks(radian_slopes, nb_class=4)
-    lines1 = []
-    lines2 = []
-    lines3 = []
-    lines4 = []
+    all_lines = [[], [], [], []]
+    all_rad_slopes = [[], [], [], []]
     for line in lines:
         for x1, y1, x2, y2 in line:
             rad_slope = math.atan(get_slope(x1, y1, x2, y2))
             if rad_slope <= max_s1:
-                lines1.append(line)
+                all_lines[0].append(line)
+                all_rad_slopes[0].append(rad_slope)
             elif rad_slope <= max_s2:
-                lines2.append(line)
+                all_lines[1].append(line)
+                all_rad_slopes[1].append(rad_slope)
             elif rad_slope <= max_s3:
-                lines3.append(line)
+                all_lines[2].append(line)
+                all_rad_slopes[2].append(rad_slope)
             elif rad_slope <= max_s4:
-                lines4.append(line)
-    return [lines1, lines2, lines3, lines4]
+                all_lines[3].append(line)
+                all_rad_slopes[3].append(rad_slope)
+    # Sometimes, only 3 slopes really exist, but it'll break one segment of slopes into a subset. This should be recombined with similar sloped ones
+    # Test if few number, and VERY similar slope
+
+    slopes = [np.mean(rad_slopes) for rad_slopes in all_rad_slopes]
+
+    all_lines_p = []
+    slopes_p = []
+    for lines, ms1 in zip(all_lines, slopes):
+        matches = False
+        for i, ms2 in enumerate(slopes_p):
+            if abs(ms1) > np.pi/2 - .08 and ms1 + ms2 < .08:
+                all_lines_p[i].extend(lines)
+                matches = True
+            elif abs(ms1 - ms2) < .08 or abs(ms2 - ms1) < .08:
+                all_lines_p[i].extend(lines)
+                matches = True
+            else:
+                pass
+        if not matches:
+            slopes_p.append(ms1)
+            all_lines_p.append(lines)
+
+    all_lines_p = [line for line in all_lines_p if len(line) > 2]    
+    return all_lines_p
 
 def get_intersections_of_linesets(lines1, lines2):
         Px = []
@@ -78,40 +107,41 @@ def find_corners(img):
         A list containing the four corners of the image in the format [[x, y], [x, y], etc]
     """
     height, width, channels = img.shape
-    
+    original = img.copy()
     img = _pre_process(img)
     edges = cv2.Canny(img,50,150,apertureSize = 3)
     edges = cv2.dilate(edges, np.ones((10, 10), dtype=np.uint8))
-    lines = cv2.HoughLinesP(edges,2,np.pi/360,100, 1, minLineLength=1000,maxLineGap=200)
+    lines = cv2.HoughLinesP(edges,2,np.pi/360,100, 1, minLineLength=700,maxLineGap=200)
+
+    contours, _ = cv2.findContours(img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
     
     all_lines = segment_lines(lines)
 
     # Uncomment  code for debugging
-    # houghimg = gray.copy()
+    # houghimg = original.copy()
     # for i, line_set in enumerate(all_lines):
     #     for line in line_set:
     #         for x1, y1, x2, y2 in line:
-    #             cv2.line(houghimg, (x1, y1), (x2, y2), color=(50*i, 50*i, 50*i), thickness=20)
+    #             cv2.line(houghimg, (x1, y1), (x2, y2), color=list(colors.values())[i], thickness=5)
     # show(houghimg, "lines")
 
     # find the line intersection points
     point_list = []
-    point_list.append(get_intersections_of_linesets(all_lines[0], all_lines[1]))
-    point_list.append(get_intersections_of_linesets(all_lines[0], all_lines[2]))
-    point_list.append(get_intersections_of_linesets(all_lines[0], all_lines[3]))
-    point_list.append(get_intersections_of_linesets(all_lines[1], all_lines[2]))
-    point_list.append(get_intersections_of_linesets(all_lines[1], all_lines[3]))
-    point_list.append(get_intersections_of_linesets(all_lines[2], all_lines[3]))
+    for i, line_set1 in enumerate(all_lines):
+        for line_set2 in all_lines[i+1:]:
+            point_list.append(get_intersections_of_linesets(line_set1, line_set2))
 
     Px = []
     Py = []
+    margin = 50
     for x_list, y_list in point_list:
         for x, y in zip(x_list, y_list):
-            if x < 0 or x > width or y < 0 or y > height:
+            if x < -margin or x > width + margin or y < -margin or y > height + margin:
                 continue
             else:
-                Px.append(x)
-                Py.append(y)
+                Px.append(max(0, min(x, width)))
+                Py.append(max(0, min(y, height)))
 
     # Uncomment code for debugging
     # intersectsimg = houghimg.copy()
@@ -123,18 +153,39 @@ def find_corners(img):
     # show(intersectsimg, "centers")
 
     P = np.float32(np.column_stack((Px, Py)))
-    nclusters = 4
-    centers = cluster_points(P, nclusters)
+    compactness, centers = cluster_points(P, 4)
+    
+    if compactness > 10000000:
+        if len(contours) == 0:
+            print("No edges found")
+            return np.array([])
+        max_contour = max(contours, key = cv2.contourArea)
+        reduced_centers = []
+        _, centers_5 = cluster_points(P, 5)
+        centers_5 = [[int(c[0]), int(c[1])] for c in centers_5]
+        for c in centers_5:
+            if abs(cv2.pointPolygonTest(max_contour, (c[0],c[1]), True)) < 100:
+                reduced_centers.append(c)
+        if len(reduced_centers) != 4:
+            print("Found more than 4 edge intersections. Check image for artifacts")
+            return np.array([])
+        centers = reduced_centers
 
     # Uncomment code for debugging
     # for cx, cy in centers:
     #     cx = np.round(cx).astype(int)
     #     cy = np.round(cy).astype(int)
-    #     cv2.circle(gray, (cx, cy), radius=10, color=[150, 150, 150], thickness=-1) # -1: filled circle
-    # show(gray, "centers")
+    #     cv2.circle(original, (cx, cy), radius=10, color=[150, 150, 150], thickness=-1) # -1: filled circle
+    # show(original, "centers")
 
     centers = [[int(c[0]), int(c[1])] for c in centers]
-    if np.std([c[0] for c in centers]) < 500 or np.std([c[1] for c in centers]) < 500:
-        return False        
 
+   # Test if any two corners are too close together for the image to be a "pass"
+    proximity_threshold = 600
+    for x1, y1 in centers:
+        for x2, y2 in centers:
+            if x1 != x2 or y1 != y2:
+                if (x1-x2)**2 + (y1-y2)**2 < proximity_threshold:
+                    print("Clipped corners/edges on image")
+                    return np.array([])
     return centers

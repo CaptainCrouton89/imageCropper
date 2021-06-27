@@ -7,24 +7,50 @@ def _pre_process(img):
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     img = 255-img
     img = cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C,\
-            cv2.THRESH_BINARY,21,4)
-    kernel = np.ones((5,5), np.uint8) # Modify this for adjusting how much it can cover up holes
-    img = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel, iterations=1)
+            cv2.THRESH_BINARY,41,1) # cv2.adaptiveThreshold(img,255,cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY,21,4
+    
+    kernel = np.ones((8, 8), np.uint8) # Modify this for adjusting how much it can cover up holes
     img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel, iterations=1)
-    img = cv2.Canny(img,50,255,apertureSize = 5)
-    kernel = np.ones((10,10), np.uint8)
-    img = cv2.dilate(img, kernel)
+    show(img)
+    
+    kernel = np.ones((10, 10), np.uint8) # Modify this for adjusting how much it can cover up holes
+    img = cv2.morphologyEx(img, cv2.MORPH_OPEN, kernel, iterations=1)
+    show(img)
+    #img = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel, iterations=1)
+    # show(img)
+    # img = cv2.Canny(img,50,255,apertureSize = 5)
+    # kernel = np.ones((20, 20), np.uint8) # 10 10 used to work for all but one
+    # img = cv2.erode(img, kernel)
+    # img = 255-img
+    # show(img)
     return img
 
 def rotate(img):
     processedimg = _pre_process(img.copy())
-    lines = cv2.HoughLinesP(processedimg,1,np.pi/90,1, 1, minLineLength=400,maxLineGap=10)
+
+    h1 = img.copy()
+    h2 = img.copy()
+    h3 = img.copy()
+    lines = cv2.HoughLinesP(processedimg,1,np.pi/2,1000, 1, minLineLength=800,maxLineGap=15)
+
+    try:
+        if lines == None:
+            lines = cv2.HoughLinesP(processedimg,1,np.pi/360,1, 1, minLineLength=400,maxLineGap=30)
+        try:
+            if lines == None:
+                print("No horizontal lines could be found to align perspective. Double check image for defects")
+                return np.array([])
+        except:
+            pass
+    except:
+       pass
+    
 
     # Uncomment for debugging
-    # for line in lines:
-    #     for x1, y1, x2, y2 in line:
-    #         cv2.line(processedimg, (x1, y1), (x2, y2), color=(100, 100, 100), thickness=1)
-    # show(processedimg)
+    for line in lines:
+        for x1, y1, x2, y2 in line:
+            cv2.line(processedimg, (x1, y1), (x2, y2), color=(100, 100, 100), thickness=1)
+    show(processedimg)
 
     slopes = get_slopes(lines)
     radian_slopes = [abs(math.atan(slope)) for slope in slopes]
@@ -36,7 +62,7 @@ def rotate(img):
     return img
 
 if __name__ == '__main__':
-    path = "../data/warp_images/input/0194_S93200802414802.jpg"
+    path = "../data/warp_images/input/0100_2021-06-11-00-15-45.jpg"
     img = cv2.imread(path)
     img = rotate(img)
     show(img)
