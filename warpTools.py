@@ -32,7 +32,7 @@ def order_points(pts):
 	rect = np.asarray(sorted(pts, key=clockwiseangle_and_distance))
 	return rect
 
-def four_point_transform(image, pts):
+def four_point_transform(image, pts, verbosity=0, debug=0):
 	rect = order_points(pts)
 	(tl, tr, br, bl) = rect
 	widthA = np.sqrt(((br[0] - bl[0]) ** 2) + ((br[1] - bl[1]) ** 2))

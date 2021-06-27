@@ -90,7 +90,7 @@ def _pre_process(img):
     rect = cv2.morphologyEx(morph, cv2.MORPH_CLOSE, kernel)
     return rect
 
-def find_corners(img):
+def find_corners(img, verbosity=0, debug=0):
     """ Finds corners of solar panel image
     
     Done by filtering image, finding edges, using houghtransforms to find 
@@ -118,13 +118,13 @@ def find_corners(img):
     
     all_lines = segment_lines(lines)
 
-    # Uncomment  code for debugging
-    # houghimg = original.copy()
-    # for i, line_set in enumerate(all_lines):
-    #     for line in line_set:
-    #         for x1, y1, x2, y2 in line:
-    #             cv2.line(houghimg, (x1, y1), (x2, y2), color=list(colors.values())[i], thickness=5)
-    # show(houghimg, "lines")
+    if debug > 0:
+        houghimg = original.copy()
+        for i, line_set in enumerate(all_lines):
+            for line in line_set:
+                for x1, y1, x2, y2 in line:
+                    cv2.line(houghimg, (x1, y1), (x2, y2), color=list(colors.values())[i], thickness=5)
+        show(houghimg, "lines")
 
     # find the line intersection points
     point_list = []
@@ -143,21 +143,22 @@ def find_corners(img):
                 Px.append(max(0, min(x, width)))
                 Py.append(max(0, min(y, height)))
 
-    # Uncomment code for debugging
-    # intersectsimg = houghimg.copy()
-    # for cx, cy in zip(Px, Py):
-    #     cx = np.round(cx).astype(int)
-    #     cy = np.round(cy).astype(int)
-    #     color = np.random.randint(0,255,3).tolist()
-    #     cv2.circle(intersectsimg, (cx, cy), radius=10, color=color, thickness=-1)
-    # show(intersectsimg, "centers")
+    if debug > 0:
+        intersectsimg = houghimg.copy()
+        for cx, cy in zip(Px, Py):
+            cx = np.round(cx).astype(int)
+            cy = np.round(cy).astype(int)
+            color = np.random.randint(0,255,3).tolist()
+            cv2.circle(intersectsimg, (cx, cy), radius=10, color=color, thickness=-1)
+        show(intersectsimg, "centers")
 
     P = np.float32(np.column_stack((Px, Py)))
     compactness, centers = cluster_points(P, 4)
     
     if compactness > 10000000:
         if len(contours) == 0:
-            print("No edges found")
+            if verbosity > 0:
+                print("No edges found")
             return np.array([])
         max_contour = max(contours, key = cv2.contourArea)
         reduced_centers = []
@@ -167,16 +168,17 @@ def find_corners(img):
             if abs(cv2.pointPolygonTest(max_contour, (c[0],c[1]), True)) < 100:
                 reduced_centers.append(c)
         if len(reduced_centers) != 4:
-            print("Found more than 4 edge intersections. Check image for artifacts")
+            if verbosity > 0:
+                print("Found more than 4 edge intersections. Check image for artifacts")
             return np.array([])
         centers = reduced_centers
 
-    # Uncomment code for debugging
-    # for cx, cy in centers:
-    #     cx = np.round(cx).astype(int)
-    #     cy = np.round(cy).astype(int)
-    #     cv2.circle(original, (cx, cy), radius=10, color=[150, 150, 150], thickness=-1) # -1: filled circle
-    # show(original, "centers")
+    if debug > 0:
+        for cx, cy in centers:
+            cx = np.round(cx).astype(int)
+            cy = np.round(cy).astype(int)
+            cv2.circle(original, (cx, cy), radius=10, color=[150, 150, 150], thickness=-1) # -1: filled circle
+        show(original, "centers")
 
     centers = [[int(c[0]), int(c[1])] for c in centers]
 
@@ -186,6 +188,7 @@ def find_corners(img):
         for x2, y2 in centers:
             if x1 != x2 or y1 != y2:
                 if (x1-x2)**2 + (y1-y2)**2 < proximity_threshold:
-                    print("Clipped corners/edges on image")
+                    if verbosity > 0:
+                        print("Clipped corners/edges on image")
                     return np.array([])
     return centers
