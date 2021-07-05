@@ -28,6 +28,8 @@ except:
 
 faulty_images = []
 
+print("Segmenting all images from", in_path)
+
 
 for filename in os.listdir(in_path):
     if filename.endswith(".jpg") or filename.endswith(".png"):
