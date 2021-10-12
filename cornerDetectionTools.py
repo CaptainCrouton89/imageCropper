@@ -84,8 +84,8 @@ def _pre_process(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray = 255-gray
     blur = cv2.blur(gray, (10, 10))
-    ret,thresh = cv2.threshold(blur, 240, 255, cv2.THRESH_BINARY_INV)
-    kernel = np.ones((50,50), np.uint8) # Modify this for adjusting how much it can cover up holes
+    ret,thresh = cv2.threshold(blur, 200, 255, cv2.THRESH_BINARY_INV) # 240, 255
+    kernel = np.ones((100,100), np.uint8) # Modify this for adjusting how much it can cover up holes
     morph = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
     rect = cv2.morphologyEx(morph, cv2.MORPH_CLOSE, kernel)
     return rect

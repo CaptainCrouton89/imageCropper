@@ -34,18 +34,21 @@ def rotate(img, verbosity=0, debug=0):
         for line in lines:
             for x1, y1, x2, y2 in line:
                 cv2.line(processedimg, (x1, y1), (x2, y2), color=(100, 100, 100), thickness=1)
-        show(processedimg)
+                cv2.line(img, (x1, y1), (x2, y2), color=(255, 0, 100), thickness=1)
+        show(img)
 
     slopes = get_slopes(lines)
-    radian_slopes = [abs(math.atan(slope)) for slope in slopes]
-    avg_slope = np.median(radian_slopes)
+    angle_in_radians = [abs(math.atan(slope)) for slope in slopes]
+    avg_angle = np.median(angle_in_radians)
     if verbosity > 1:
-        print("Average slope in radians:", avg_slope)
+        print("Average angle in radians:", avg_angle)
 
-    if avg_slope > np.pi/4:
+    if avg_angle < np.pi/4:
         img = cv2.rotate(img, cv2.ROTATE_90_CLOCKWISE)
         if verbosity > 1:
             print('rotated')
+    if debug > 0:
+        show(img)
     return img
 
 if __name__ == '__main__':
