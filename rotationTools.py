@@ -30,12 +30,14 @@ def rotate(img, verbosity=0, debug=0):
     except:
         pass
 
+
     if debug > 0:
+        test_img = img.copy()
         for line in lines:
             for x1, y1, x2, y2 in line:
                 cv2.line(processedimg, (x1, y1), (x2, y2), color=(100, 100, 100), thickness=1)
-                cv2.line(img, (x1, y1), (x2, y2), color=(255, 0, 100), thickness=1)
-        show(img)
+                cv2.line(test_img, (x1, y1), (x2, y2), color=(255, 0, 100), thickness=1)
+        show(test_img)
 
     slopes = get_slopes(lines)
     angle_in_radians = [abs(math.atan(slope)) for slope in slopes]

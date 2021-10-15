@@ -84,10 +84,13 @@ def _pre_process(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     gray = 255-gray
     blur = cv2.blur(gray, (10, 10))
-    ret,thresh = cv2.threshold(blur, 200, 255, cv2.THRESH_BINARY_INV) # 240, 255
+    ret,thresh = cv2.threshold(blur, 200, 255, cv2.THRESH_BINARY_INV) # 240, 255 # Can modify this ( the 200 value )
+    show(thresh)
     kernel = np.ones((100,100), np.uint8) # Modify this for adjusting how much it can cover up holes
     morph = cv2.morphologyEx(thresh, cv2.MORPH_OPEN, kernel)
+    show(morph)
     rect = cv2.morphologyEx(morph, cv2.MORPH_CLOSE, kernel)
+    show(rect)
     return rect
 
 def find_corners(img, verbosity=0, debug=0):
